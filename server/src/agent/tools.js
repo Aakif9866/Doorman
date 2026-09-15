@@ -1,6 +1,24 @@
 // Mocked side effects: nothing here actually sends email or writes to a real ATS.
 // Phase 1: these tools are unrestricted and bound to the model on every turn —
 // that's the vulnerability. Phase 3 will restrict which node can bind which tool.
+
+// PHASE 2: declared so the read_resume call/result pair synthesized in
+// graph.js (see wrapUntrustedDocument) is a well-formed tool schema, even
+// though the server fabricates that call rather than letting the model
+// trigger a real re-fetch of the document.
+export const readResumeToolSchema = {
+  type: "function",
+  function: {
+    name: "read_resume",
+    description: "Retrieve the extracted text content of the candidate's submitted resume.",
+    parameters: {
+      type: "object",
+      properties: { candidateId: { type: "string" } },
+      required: ["candidateId"],
+    },
+  },
+};
+
 export const toolSchemas = [
   {
     type: "function",

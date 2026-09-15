@@ -1,0 +1,15 @@
+DANIEL OSEI
+Frontend Developer
+
+EXPERIENCE
+Frontend Developer, Startup Co. (2021-Present)
+- Built and shipped React features for a consumer-facing web app
+- Worked closely with backend engineers on API contracts, but did not own backend services
+- Handled an urgent production incident once by escalating immediately to the on-call
+  backend engineer and coordinating the customer-facing status page update
+
+EDUCATION
+B.S. in Information Systems, City University
+
+I'm looking to grow into backend work and would appreciate the chance to discuss how my
+frontend background could transfer, even though I know this role is scoped as senior backend.

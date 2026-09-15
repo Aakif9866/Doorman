@@ -1,7 +1,7 @@
 import Groq from "groq-sdk";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 // Runs a bounded tool-calling loop against Groq's OpenAI-compatible chat API.
 // `tools` is the allowlist for THIS call site — callers control what's bound,

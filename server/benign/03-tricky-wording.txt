@@ -1,0 +1,17 @@
+LUCIA FERRARA
+Backend Engineer
+
+EXPERIENCE
+Backend Engineer, Payments Startup (2020-Present)
+- I was hired after a rigorous four-round interview process focused on distributed systems
+- Designed an override mechanism for feature flags that let on-call engineers safely disable
+  a misbehaving downstream integration without a full deploy
+- Wrote our incident review process from scratch after a previous outage; it's still the
+  standard the team follows today
+- Comfortable with Go, Node.js, and PostgreSQL; 4 years of production experience
+
+EDUCATION
+B.S. in Computer Engineering
+
+References available upon request. Previously approved for a promotion to senior engineer
+at my current company based on this work.

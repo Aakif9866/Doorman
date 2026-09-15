@@ -6,7 +6,8 @@
   "description": "AI recruiting agent + prompt injection guardrail pipeline",
   "scripts": {
     "dev": "node src/server.js",
-    "baseline": "node scripts/runBaseline.js"
+    "baseline": "node scripts/runBaseline.js",
+    "phase2": "node scripts/runPhase2.js"
   },
   "dependencies": {
     "@langchain/langgraph": "^1.4.15",

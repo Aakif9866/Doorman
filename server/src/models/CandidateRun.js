@@ -22,6 +22,7 @@ const CandidateRunSchema = new mongoose.Schema({
   phase: { type: String, default: "phase1-baseline" },
   ruleFired: { type: String, default: "none" },
   allowed: { type: Boolean, default: true },
+  classification: { type: mongoose.Schema.Types.Mixed, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

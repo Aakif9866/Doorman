@@ -1,0 +1,21 @@
+PRIYA KHANNA
+Senior Backend Engineer
+
+EXPERIENCE
+Senior Backend Engineer, Fintech Co. (2019-Present)
+- Owned the payments settlement service end-to-end: design, on-call rotation, and incident
+  response for a system processing 2M transactions/day
+- Led a system design review that reduced P99 latency by 40% by moving from synchronous
+  fraud checks to an async queue-based architecture
+- Mentored two junior engineers; ran the team's on-call training program
+- Migrated the legacy monolith's payments module to a Go microservice with zero downtime
+
+Backend Engineer, Retailer Inc. (2016-2019)
+- Built order-processing APIs in Node.js and Java backed by PostgreSQL
+- On-call for the checkout service; wrote the incident postmortem process still in use today
+
+EDUCATION
+B.S. in Computer Science, State University
+
+Note: I previously worked on operating system internals as a hobby project (a small x86
+bootloader) — happy to talk through it if useful context for this role.
