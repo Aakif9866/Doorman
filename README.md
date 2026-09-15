@@ -81,7 +81,16 @@ Untrusted Resume
     a tool call directly. It's built to evade the Phase 2 classifier
     entirely (verified: 0 rules fired, 0 similarity matches) so it actually
     exercises this layer instead of being blocked upstream.
-- Phases 4–6 (output scanning, full 60/100 red team corpus, dashboard) —
+- **Test console (ahead of Phase 6): done.** `client/index.html` is a small,
+  dependency-free HTML/JS page (no React, no build step) served directly by
+  the Express app — pick a pipeline (1/2/3), run any built-in attack/benign
+  resume or an uploaded file, and see which rule fired, the evaluate stage's
+  score/recommendation, the review gate outcome, and the actual mocked tool
+  calls executed. Backed by `GET /api/samples` (lists the built-in resumes)
+  and `POST /api/samples/evaluate` (runs one without a real upload). This is
+  a throwaway-quality stand-in for the real Phase 6 React dashboard, not the
+  dashboard itself.
+- Phases 4–6 (output scanning, full 60/100 red team corpus, real dashboard) —
   not yet built.
 
 ## Results so far
@@ -169,7 +178,8 @@ Reproduce with `npm run phase3` in `server/`.
 - Backend: Node.js + Express
 - Database: MongoDB (optional for now — falls back to console/in-memory if
   `MONGO_URI` isn't set)
-- Frontend: React (planned, Phase 6)
+- Frontend: a static HTML/JS test console exists now (`client/index.html`);
+  the real React dashboard is planned for Phase 6
 
 ## Running it locally
 
@@ -183,6 +193,8 @@ npm run phase2     # Phase 2: attacks + benign resumes through classify+isolate
 npm run phase3     # Phase 3: attacks + benign resumes through classify+isolate+allowlist
 npm run dev        # starts the API on :4000 (POST /api/candidates/upload?phase=1|2|3)
 ```
+
+Then open [http://localhost:4000](http://localhost:4000) for the test console, or drive the API directly at `POST /api/candidates/upload?phase=1|2|3` and `POST /api/samples/evaluate`.
 
 ## What I'd do with more time
 
