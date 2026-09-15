@@ -9,7 +9,7 @@ export async function connectMongo() {
     return false;
   }
   try {
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 2000 });
     connected = true;
     console.log("[db] connected to MongoDB");
     return true;

@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Doorman — Guardrail Test Console</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2f3a;
+    --text: #e6e8eb;
+    --muted: #8b93a1;
+    --accent: #5b8cff;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .layout { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  label:first-child { margin-top: 0; }
+  select, input[type="file"], input[type="text"] {
+    width: 100%;
+    background: #0f1115;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .phase-options { display: flex; flex-direction: column; gap: 8px; }
+  .phase-option {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .phase-option.selected { border-color: var(--accent); background: rgba(91,140,255,0.08); }
+  .phase-option .name { font-weight: 600; }
+  .phase-option .desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 14px;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: #2a2f3a; }
+  .divider { text-align: center; color: var(--muted); font-size: 11px; margin: 18px 0; text-transform: uppercase; letter-spacing: 0.06em; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.blocked { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge.allowed { background: rgba(52,211,153,0.15); color: var(--green); }
+  .badge.review-failed { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 60px 20px; }
+  .result-section { margin-top: 16px; }
+  .result-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 8px; }
+  .rule-tag {
+    display: inline-block;
+    background: rgba(248,113,113,0.12);
+    color: var(--red);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 12px;
+    margin: 0 6px 6px 0;
+    font-family: ui-monospace, monospace;
+  }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+  .kv .k { color: var(--muted); }
+  .tool-call {
+    background: #0f1115;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .tool-call .fn { color: var(--accent); font-family: ui-monospace, monospace; font-weight: 600; }
+  .similarity-line { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  details { margin-top: 16px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  pre { background: #0f1115; border: 1px solid var(--border); border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 12px; }
+  .loading { color: var(--muted); font-size: 13px; padding: 40px; text-align: center; }
+  .error { color: var(--red); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<h1>Doorman — Guardrail Test Console</h1>
+<div class="subtitle">Run a resume through the prompt-injection defense pipeline and see what each layer decided.</div>
+
+<div class="layout">
+  <div>
+    <div class="panel">
+      <label>Pipeline</label>
+      <div class="phase-options" id="phaseOptions"></div>
+    </div>
+
+    <div class="panel">
+      <label>Built-in sample resume</label>
+      <select id="sampleSelect"><option value="">Loading…</option></select>
+      <button id="runSampleBtn">Run sample</button>
+
+      <div class="divider">or</div>
+
+      <label>Upload your own</label>
+      <input type="file" id="fileInput" accept=".txt,.pdf" />
+      <button id="runUploadBtn" class="secondary">Upload &amp; run</button>
+    </div>
+  </div>
+
+  <div class="panel" id="resultsPanel">
+    <div class="empty-state">Pick a pipeline and a resume, then run it.</div>
+  </div>
+</div>
+
+<script>
+const PHASES = [
+  { id: "1", name: "Phase 1 — Undefended baseline", desc: "Zero guardrails. Full tool access from turn one." },
+  { id: "2", name: "Phase 2 — Classify + isolate", desc: "Input classifier blocks obvious attacks before the model runs; resume delivered as isolated tool-result data." },
+  { id: "3", name: "Phase 3 — Tool allowlisting", desc: "Adds a separate evaluate stage with no email/ATS tools bound, then a review gate, then a act stage with no raw resume text in context." },
+];
+
+let selectedPhase = "3";
+
+function renderPhaseOptions() {
+  const el = document.getElementById("phaseOptions");
+  el.innerHTML = PHASES.map(p => `
+    <div class="phase-option ${p.id === selectedPhase ? "selected" : ""}" data-phase="${p.id}">
+      <div class="name">${p.name}</div>
+      <div class="desc">${p.desc}</div>
+    </div>
+  `).join("");
+  el.querySelectorAll(".phase-option").forEach(node => {
+    node.addEventListener("click", () => {
+      selectedPhase = node.dataset.phase;
+      renderPhaseOptions();
+    });
+  });
+}
+renderPhaseOptions();
+
+async function loadSamples() {
+  const res = await fetch("/api/samples");
+  const data = await res.json();
+  const select = document.getElementById("sampleSelect");
+  const groups = [
+    { label: "Attack resumes", category: "attacks", files: data.attacks },
+    { label: "Benign resumes", category: "benign", files: data.benign },
+  ];
+  select.innerHTML = groups.map(g => `
+    <optgroup label="${g.label}">
+      ${g.files.map(f => `<option value="${g.category}::${f}">${f}</option>`).join("")}
+    </optgroup>
+  `).join("");
+}
+loadSamples();
+
+function showLoading() {
+  document.getElementById("resultsPanel").innerHTML = `<div class="loading">Running through the pipeline… (calls a real LLM, can take a few seconds)</div>`;
+}
+
+function showError(message) {
+  document.getElementById("resultsPanel").innerHTML = `<div class="error">${message}</div>`;
+}
+
+function renderResult(result) {
+  const c = result.classification;
+  const blockedAtInput = c && c.decision === "block";
+  const blockedAtReview = result.review && !result.review.passed;
+
+  let badge;
+  if (blockedAtInput) badge = `<span class="badge blocked">Blocked — input classifier</span>`;
+  else if (blockedAtReview) badge = `<span class="badge review-failed">Blocked — review gate</span>`;
+  else badge = `<span class="badge allowed">Reached act stage</span>`;
+
+  let html = `<div class="kv"><div class="k">Candidate</div><div>${result.candidateId}</div><div class="k">File</div><div>${result.fileName}</div></div>`;
+  html += `<div style="margin-top:12px">${badge}</div>`;
+
+  if (c) {
+    html += `<div class="result-section"><h3>Input classification</h3>`;
+    if (c.firedRules && c.firedRules.length) {
+      html += c.firedRules.map(r => `<span class="rule-tag">${r}</span>`).join("");
+    } else {
+      html += `<span style="color:var(--muted);font-size:13px">No rules fired</span>`;
+    }
+    if (c.similarityMatches && c.similarityMatches.length) {
+      html += c.similarityMatches.map(m =>
+        `<div class="similarity-line">score ${m.score} — "${m.line}" ≈ "${m.matchedPhrase}"</div>`
+      ).join("");
+    }
+    html += `</div>`;
+  }
+
+  if (result.evaluation) {
+    html += `<div class="result-section"><h3>Evaluation (evaluate stage)</h3>
+      <div class="kv">
+        <div class="k">Score</div><div>${result.evaluation.score} / 10</div>
+        <div class="k">Recommendation</div><div>${result.evaluation.recommendation}</div>
+        <div class="k">Justification</div><div>${result.evaluation.justification}</div>
+      </div></div>`;
+  }
+
+  if (result.review && !result.review.passed) {
+    html += `<div class="result-section"><h3>Review gate</h3><div class="error">Rejected: ${result.review.reason}</div></div>`;
+  }
+
+  if (result.toolCalls && result.toolCalls.length) {
+    html += `<div class="result-section"><h3>Tool calls executed</h3>`;
+    html += result.toolCalls.map(tc => `
+      <div class="tool-call">
+        <div class="fn">${tc.name}(${JSON.stringify(tc.args).slice(0, 300)})</div>
+      </div>
+    `).join("");
+    html += `</div>`;
+  } else if (!blockedAtInput && !blockedAtReview) {
+    html += `<div class="result-section"><h3>Tool calls executed</h3><div style="color:var(--muted);font-size:13px">None</div></div>`;
+  }
+
+  if (result.finalMessage) {
+    html += `<div class="result-section"><h3>Agent's final message</h3><div style="font-size:13px">${result.finalMessage}</div></div>`;
+  }
+
+  html += `<details><summary>Raw response JSON</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>`;
+
+  document.getElementById("resultsPanel").innerHTML = html;
+}
+
+document.getElementById("runSampleBtn").addEventListener("click", async () => {
+  const val = document.getElementById("sampleSelect").value;
+  if (!val) return showError("Pick a sample resume first.");
+  const [category, file] = val.split("::");
+  showLoading();
+  try {
+    const res = await fetch("/api/samples/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, file, phase: selectedPhase }),
+    });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error || "Request failed.");
+    renderResult(data);
+  } catch (err) {
+    showError(String(err));
+  }
+});
+
+document.getElementById("runUploadBtn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("fileInput");
+  if (!fileInput.files[0]) return showError("Choose a file to upload first.");
+  showLoading();
+  try {
+    const formData = new FormData();
+    formData.append("resume", fileInput.files[0]);
+    const res = await fetch(`/api/candidates/upload?phase=${selectedPhase}`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error || "Request failed.");
+    renderResult(data);
+  } catch (err) {
+    showError(String(err));
+  }
+});
+</script>
+</body>
+</html>
