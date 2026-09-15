@@ -19,6 +19,26 @@ export const readResumeToolSchema = {
   },
 };
 
+// PHASE 3: the ONLY tool bound during evaluation. send_email/write_to_ats are
+// not in this schema list at all, so the model has no way to invoke them at
+// this stage — not "instructed not to", structurally absent from the request.
+export const submitEvaluationToolSchema = {
+  type: "function",
+  function: {
+    name: "submit_evaluation",
+    description: "Submit your final evaluation of the candidate. This is the only action available at this stage.",
+    parameters: {
+      type: "object",
+      properties: {
+        score: { type: "integer", minimum: 1, maximum: 10 },
+        recommendation: { type: "string", enum: ["Reject", "Under Review", "Interview", "Hire"] },
+        justification: { type: "string", description: "Specific resume evidence supporting the score." },
+      },
+      required: ["score", "recommendation", "justification"],
+    },
+  },
+};
+
 export const toolSchemas = [
   {
     type: "function",
@@ -59,6 +79,9 @@ export const toolSchemas = [
 
 export async function executeTool(name, args) {
   const timestamp = new Date().toISOString();
+  if (name === "submit_evaluation") {
+    return { ok: true, recorded: true, timestamp, ...args };
+  }
   if (name === "send_email") {
     console.log(`  [MOCK EMAIL] to=${args.to || "(unspecified)"} subject="${args.subject || ""}"`);
     console.log(`               body: ${(args.body || "").slice(0, 300)}`);

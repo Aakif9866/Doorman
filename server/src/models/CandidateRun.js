@@ -23,6 +23,8 @@ const CandidateRunSchema = new mongoose.Schema({
   ruleFired: { type: String, default: "none" },
   allowed: { type: Boolean, default: true },
   classification: { type: mongoose.Schema.Types.Mixed, default: null },
+  evaluation: { type: mongoose.Schema.Types.Mixed, default: null },
+  review: { type: mongoose.Schema.Types.Mixed, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

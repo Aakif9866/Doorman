@@ -6,7 +6,7 @@ const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 // Runs a bounded tool-calling loop against Groq's OpenAI-compatible chat API.
 // `tools` is the allowlist for THIS call site — callers control what's bound,
 // which is what makes per-node tool restriction (Phase 3) possible later.
-export async function runAgentLoop({ messages, tools, executeTool, maxSteps = 5 }) {
+export async function runAgentLoop({ messages, tools, executeTool, maxSteps = 5, toolChoice }) {
   const toolCalls = [];
   let currentMessages = [...messages];
 
@@ -15,7 +15,7 @@ export async function runAgentLoop({ messages, tools, executeTool, maxSteps = 5 
       model: MODEL,
       messages: currentMessages,
       tools: tools && tools.length > 0 ? tools : undefined,
-      tool_choice: tools && tools.length > 0 ? "auto" : undefined,
+      tool_choice: tools && tools.length > 0 ? (toolChoice ?? "auto") : undefined,
       temperature: 0.2,
     });
 
