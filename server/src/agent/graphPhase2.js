@@ -29,7 +29,8 @@ function routeAfterClassify(state) {
   return state.classification.decision === "block" ? "blocked" : "read";
 }
 
-// Node 2a: "read" — LAYER 2 (hard isolation). Unlike Phase 1, the resume text
+// Node 2a: "read" — LAYER 2 (structural isolation, not a sandbox). Unlike
+// Phase 1, the resume text
 // is never folded into a user-role message next to instructions. It's framed
 // as the result of a read_resume tool call, wrapped in an explicit
 // <candidate_document> data boundary, and the system prompt tells the model

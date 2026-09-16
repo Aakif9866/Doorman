@@ -15,9 +15,16 @@ export async function saveRun(run) {
   return record;
 }
 
+// resumeText is excluded here deliberately — it's the candidate's raw PII,
+// and this is a listing endpoint with no per-run access control. Full-text
+// access to a specific run would need its own authorization story (only the
+// recruiter who owns that requisition, an audit trail, a retention policy),
+// none of which exists yet. Everything needed to understand a decision
+// (rules fired, evaluation, review outcome, actions taken) doesn't depend on
+// the raw text being present here.
 export async function getAllRuns() {
   if (isConnected()) {
-    return CandidateRun.find().sort({ createdAt: -1 }).lean();
+    return CandidateRun.find().select("-resumeText").sort({ createdAt: -1 }).lean();
   }
-  return [...inMemoryRuns].reverse();
+  return [...inMemoryRuns].reverse().map(({ resumeText, ...rest }) => rest);
 }

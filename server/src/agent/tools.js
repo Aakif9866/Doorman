@@ -79,6 +79,18 @@ export const toolSchemas = [
 
 export async function executeTool(name, args) {
   const timestamp = new Date().toISOString();
+  if (name === "read_resume") {
+    // The read_resume call in every graph is fabricated by the server (see
+    // wrapUntrustedDocument) so the resume can be framed as tool-result data
+    // without a real round trip. Its schema is still declared so that
+    // fabricated call is well-formed conversation history, and so Phase 3's
+    // forced tool_choice has something concrete to point away from. If the
+    // model ever actually selects this live (it shouldn't — see the
+    // allowlist/tool_choice enforcement around this), fail loudly instead of
+    // silently returning "Unknown tool", since a live call here would mean
+    // one of those guarantees broke.
+    return { ok: false, error: "read_resume has no live handler — the document is only ever delivered via a fabricated call" };
+  }
   if (name === "submit_evaluation") {
     return { ok: true, recorded: true, timestamp, ...args };
   }

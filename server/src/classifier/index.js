@@ -22,7 +22,7 @@ export function classifyDocument(text) {
 
   const firedRules = [
     ...ruleMatches.map((m) => m.rule),
-    ...(blockedBySimilarity ? ["semantic-similarity-multi-match"] : []),
+    ...(blockedBySimilarity ? ["lexical-similarity-multi-match"] : []),
   ];
 
   return {

@@ -6,9 +6,17 @@ const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 // Runs a bounded tool-calling loop against Groq's OpenAI-compatible chat API.
 // `tools` is the allowlist for THIS call site — callers control what's bound,
 // which is what makes per-node tool restriction (Phase 3) possible later.
+//
+// Dispatch-time enforcement: a provider's `tools`/`tool_choice` restriction is
+// the provider's contract with us, not something we should rely on as the
+// only check. Before executing anything, we independently verify the
+// returned tool name is one we actually declared in THIS call. This costs
+// nothing when the provider behaves and closes the gap if it doesn't (a bug,
+// a future model change, or a different provider with looser enforcement).
 export async function runAgentLoop({ messages, tools, executeTool, maxSteps = 5, toolChoice }) {
   const toolCalls = [];
   let currentMessages = [...messages];
+  const allowedNames = new Set((tools || []).map((t) => t.function.name));
 
   for (let step = 0; step < maxSteps; step++) {
     const response = await groq.chat.completions.create({
@@ -33,7 +41,15 @@ export async function runAgentLoop({ messages, tools, executeTool, maxSteps = 5,
       } catch {
         args = { _parseError: toolCall.function.arguments };
       }
-      const result = await executeTool(toolCall.function.name, args);
+
+      let result;
+      if (!allowedNames.has(toolCall.function.name)) {
+        result = { ok: false, blocked: true, error: `'${toolCall.function.name}' is not in this stage's tool allowlist` };
+        console.warn(`  [ALLOWLIST VIOLATION] refused to dispatch ${toolCall.function.name} — not bound at this stage`);
+      } else {
+        result = await executeTool(toolCall.function.name, args);
+      }
+
       toolCalls.push({ name: toolCall.function.name, args, result });
       currentMessages.push({
         role: "tool",

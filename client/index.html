@@ -144,6 +144,15 @@
 </div>
 
 <script>
+// Every value below can originate from an uploaded file, an LLM response, or
+// a server error message — all attacker-influenceable. Everything gets
+// escaped before going into innerHTML; nothing here trusts its input.
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
+
 const PHASES = [
   { id: "1", name: "Phase 1 — Undefended baseline", desc: "Zero guardrails. Full tool access from turn one." },
   { id: "2", name: "Phase 2 — Classify + isolate", desc: "Input classifier blocks obvious attacks before the model runs; resume delivered as isolated tool-result data." },
@@ -179,7 +188,7 @@ async function loadSamples() {
   ];
   select.innerHTML = groups.map(g => `
     <optgroup label="${g.label}">
-      ${g.files.map(f => `<option value="${g.category}::${f}">${f}</option>`).join("")}
+      ${g.files.map(f => `<option value="${g.category}::${escapeHtml(f)}">${escapeHtml(f)}</option>`).join("")}
     </optgroup>
   `).join("");
 }
@@ -190,7 +199,7 @@ function showLoading() {
 }
 
 function showError(message) {
-  document.getElementById("resultsPanel").innerHTML = `<div class="error">${message}</div>`;
+  document.getElementById("resultsPanel").innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
 }
 
 function renderResult(result) {
@@ -203,19 +212,19 @@ function renderResult(result) {
   else if (blockedAtReview) badge = `<span class="badge review-failed">Blocked — review gate</span>`;
   else badge = `<span class="badge allowed">Reached act stage</span>`;
 
-  let html = `<div class="kv"><div class="k">Candidate</div><div>${result.candidateId}</div><div class="k">File</div><div>${result.fileName}</div></div>`;
+  let html = `<div class="kv"><div class="k">Candidate</div><div>${escapeHtml(result.candidateId)}</div><div class="k">File</div><div>${escapeHtml(result.fileName)}</div></div>`;
   html += `<div style="margin-top:12px">${badge}</div>`;
 
   if (c) {
     html += `<div class="result-section"><h3>Input classification</h3>`;
     if (c.firedRules && c.firedRules.length) {
-      html += c.firedRules.map(r => `<span class="rule-tag">${r}</span>`).join("");
+      html += c.firedRules.map(r => `<span class="rule-tag">${escapeHtml(r)}</span>`).join("");
     } else {
       html += `<span style="color:var(--muted);font-size:13px">No rules fired</span>`;
     }
     if (c.similarityMatches && c.similarityMatches.length) {
       html += c.similarityMatches.map(m =>
-        `<div class="similarity-line">score ${m.score} — "${m.line}" ≈ "${m.matchedPhrase}"</div>`
+        `<div class="similarity-line">score ${escapeHtml(m.score)} — "${escapeHtml(m.line)}" ≈ "${escapeHtml(m.matchedPhrase)}"</div>`
       ).join("");
     }
     html += `</div>`;
@@ -224,21 +233,21 @@ function renderResult(result) {
   if (result.evaluation) {
     html += `<div class="result-section"><h3>Evaluation (evaluate stage)</h3>
       <div class="kv">
-        <div class="k">Score</div><div>${result.evaluation.score} / 10</div>
-        <div class="k">Recommendation</div><div>${result.evaluation.recommendation}</div>
-        <div class="k">Justification</div><div>${result.evaluation.justification}</div>
+        <div class="k">Score</div><div>${escapeHtml(result.evaluation.score)} / 10</div>
+        <div class="k">Recommendation</div><div>${escapeHtml(result.evaluation.recommendation)}</div>
+        <div class="k">Justification</div><div>${escapeHtml(result.evaluation.justification)}</div>
       </div></div>`;
   }
 
   if (result.review && !result.review.passed) {
-    html += `<div class="result-section"><h3>Review gate</h3><div class="error">Rejected: ${result.review.reason}</div></div>`;
+    html += `<div class="result-section"><h3>Review gate</h3><div class="error">Rejected: ${escapeHtml(result.review.reason)}</div></div>`;
   }
 
   if (result.toolCalls && result.toolCalls.length) {
     html += `<div class="result-section"><h3>Tool calls executed</h3>`;
     html += result.toolCalls.map(tc => `
       <div class="tool-call">
-        <div class="fn">${tc.name}(${JSON.stringify(tc.args).slice(0, 300)})</div>
+        <div class="fn">${escapeHtml(tc.name)}(${escapeHtml(JSON.stringify(tc.args).slice(0, 300))})</div>
       </div>
     `).join("");
     html += `</div>`;
@@ -247,10 +256,10 @@ function renderResult(result) {
   }
 
   if (result.finalMessage) {
-    html += `<div class="result-section"><h3>Agent's final message</h3><div style="font-size:13px">${result.finalMessage}</div></div>`;
+    html += `<div class="result-section"><h3>Agent's final message</h3><div style="font-size:13px">${escapeHtml(result.finalMessage)}</div></div>`;
   }
 
-  html += `<details><summary>Raw response JSON</summary><pre>${JSON.stringify(result, null, 2)}</pre></details>`;
+  html += `<details><summary>Raw response JSON</summary><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre></details>`;
 
   document.getElementById("resultsPanel").innerHTML = html;
 }

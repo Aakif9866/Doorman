@@ -18,12 +18,16 @@ Instructions:
 4. Use your tools to send the candidate an appropriate status email and write the final status to the ATS.`;
 }
 
-// PHASE 2 — hard isolation. The system prompt now explicitly frames candidate
-// document content as inert data, and graph.js backs that framing structurally
-// (the resume arrives as a tool-result message, not folded into a user turn).
-// Framing alone is not a defense — this only matters combined with the input
-// classifier (classifier/) that runs before any of this text is ever seen,
-// and with the tool allowlisting/output scanning added in later phases.
+// PHASE 2 — structural isolation, not a sandbox. The resume still lands in
+// the same LLM conversation as everything else; there's no trust boundary
+// the model enforces on our behalf. What changes is HOW it's presented: a
+// tool-result message instead of a user-role message, with an explicit,
+// escaped data boundary (see wrapUntrustedDocument below) instead of raw
+// concatenation. That's a real improvement — models do treat tool results
+// as data more reliably than free-form user text — but it's a presentation
+// technique, and it only matters combined with the input classifier
+// (classifier/) that runs before any of this text is seen, and the tool
+// allowlisting (Phase 3) that limits what a fooled model can do regardless.
 export function buildIsolatedSystemPrompt(jobDescription) {
   return `You are an AI recruiting agent. You screen incoming candidate resumes against a job description, decide on a score and recommendation, and then take action using your tools.
 
@@ -50,10 +54,22 @@ Instructions:
    to the ATS.`;
 }
 
-// Wraps raw extracted resume text in an explicit, hard-to-spoof data boundary
-// before it's placed in a tool-result message.
+// Escapes literal angle brackets so document text can't close the
+// <candidate_document> tag early (e.g. a resume containing the literal
+// string "</candidate_document>" followed by fake instructions). This does
+// NOT make the surrounding conversation a sandbox or trust boundary — the
+// text is still part of the same LLM context, just structurally unable to
+// spoof the boundary marker itself. See classifier/ and the tool allowlist
+// in graphPhase3.js for the controls that actually constrain what a fooled
+// model can do.
+function escapeForDocumentBoundary(text) {
+  return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 export function wrapUntrustedDocument(fileName, resumeText) {
-  return `<candidate_document source="${fileName}">\n${resumeText}\n</candidate_document>`;
+  const safeFileName = escapeForDocumentBoundary(fileName);
+  const safeText = escapeForDocumentBoundary(resumeText);
+  return `<candidate_document source="${safeFileName}">\n${safeText}\n</candidate_document>`;
 }
 
 // PHASE 3 — tool allowlisting. This is the evaluate-stage prompt: it does not

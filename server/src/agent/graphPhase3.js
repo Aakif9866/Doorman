@@ -7,6 +7,7 @@ import {
 import { toolSchemas, readResumeToolSchema, submitEvaluationToolSchema, executeTool } from "./tools.js";
 import { runAgentLoop } from "./llmClient.js";
 import { reviewEvaluation } from "./reviewGate.js";
+import { checkActionAgainstPolicy } from "./actionPolicy.js";
 import { saveRun } from "../storage.js";
 import { classifyDocument } from "../classifier/index.js";
 
@@ -94,6 +95,12 @@ function routeAfterReview(state) {
 // text (and anything injected into it) has completely left the context by
 // the time these tools become available. The model can only act on the
 // validated {score, recommendation, justification} object.
+//
+// The system prompt TELLS the model to carry out exactly that recommendation
+// — but a prompt is not enforcement. policyEnforcedExecute independently
+// checks, in code, that each tool call actually matches what the
+// recommendation authorizes (see actionPolicy.js) before it's allowed to run
+// for real. A mismatched call is refused, not executed.
 async function actNode(state) {
   const system = buildActSystemPrompt(state.jobDescription);
   const candidateEmail = `${state.candidateId}@example.com`;
@@ -111,10 +118,23 @@ async function actNode(state) {
     },
   ];
 
+  const policyEnforcedExecute = async (name, args) => {
+    const policyCheck = checkActionAgainstPolicy(name, args, {
+      evaluation: state.evaluation,
+      candidateId: state.candidateId,
+      candidateEmail,
+    });
+    if (!policyCheck.allowed) {
+      console.warn(`  [POLICY BLOCKED] ${name}(${JSON.stringify(args)}) — ${policyCheck.reason}`);
+      return { ok: false, blocked: true, reason: policyCheck.reason };
+    }
+    return executeTool(name, args);
+  };
+
   const { finalMessage, toolCalls } = await runAgentLoop({
     messages: actMessages,
     tools: toolSchemas,
-    executeTool,
+    executeTool: policyEnforcedExecute,
   });
 
   return { finalMessage, toolCalls };
